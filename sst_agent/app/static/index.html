@@ -1,0 +1,41 @@
+<!-- sst_agent/app/static/index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>SST Agent Chat</title>
+  <style>
+    body{font-family: Arial; max-width:800px;margin:20px auto}
+    #chat{border:1px solid #ddd;padding:10px;height:60vh;overflow:auto}
+    .user{color:blue}
+    .bot{color:green}
+  </style>
+</head>
+<body>
+  <h1>SST Agent</h1>
+  <div id="chat"></div>
+  <input id="input" style="width:80%"/>
+  <button id="send">Enviar</button>
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    document.getElementById('send').onclick = async () => {
+      const q = input.value;
+      if(!q) return;
+      chat.innerHTML += `<div class="user"><strong>Tú:</strong> ${q}</div>`;
+      input.value = '';
+      const res = await fetch('/api/query', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({question:q})
+      });
+      const data = await res.json();
+      chat.innerHTML += `<div class="bot"><strong>Agente:</strong> ${data.answer}</div>`;
+      if(data.sources) {
+        chat.innerHTML += `<div><em>Fuentes:</em> ${JSON.stringify(data.sources)}</div>`;
+      }
+      chat.scrollTop = chat.scrollHeight;
+    };
+  </script>
+</body>
+</html>

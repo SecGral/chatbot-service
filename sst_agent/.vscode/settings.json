@@ -1,0 +1,4 @@
+{
+  "python.analysis.extraPaths": ["./sst_agent"],
+  "python.defaultInterpreterPath": "venv/bin/python"
+}

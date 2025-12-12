@@ -1,5 +1,18 @@
+# Entorno virtual
 venv/
+
+# Caches
 __pycache__/
 *.pyc
+
+# Variables de entorno
 .env
+*.env
+
+# Archivos de logs
+*.log
+
+# Archivos temporales o de BD
+*.db
+*.sqlite3
 

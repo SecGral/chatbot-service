@@ -2,3 +2,10 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
+groq
+sentence-transformers
+pypdf
+python-docx
+psycopg2-binary
+sqlalchemy
+pgvector

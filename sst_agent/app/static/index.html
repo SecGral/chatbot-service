@@ -138,9 +138,9 @@ function addMessage(text, cls){
 function addSources(sources){
   const div = document.createElement("div");
   div.className = "sources";
-  let html = "<strong>Fuentes:</strong><br>";
+  let html = "<strong>📚 Fuentes consultadas:</strong><br>";
   sources.forEach(s=>{
-    html += `📄 ${s.file} (pág. ${s.page})<br>`;
+    html += `   • ${s.file}<br>`;
   });
   div.innerHTML = html;
   chat.appendChild(div);

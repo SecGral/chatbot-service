@@ -25,6 +25,7 @@ class IndexResponse(BaseModel):
     message: str
 
 
+
 @router.get("/health")
 def health_check():
     """Endpoint de health check."""
@@ -135,37 +136,45 @@ def query(req: Query):
     """
     try:
         question = req.question.strip()
-        
-        # Detectar saludos y conversación general
-        saludos = ["hola", "buenos dias", "buenas tardes", "buenas noches", "saludos", "hey", "holi"]
-        despedidas = ["adios", "chao", "hasta luego", "nos vemos", "bye"]
-        agradecimientos = ["gracias", "muchas gracias", "thanks", "gracias por", "te agradezco"]
-        
         question_lower = question.lower()
         
-        # Responder a saludos
-        if any(saludo in question_lower for saludo in saludos):
+        # Detectar si es SOLO un saludo (sin pregunta adicional)
+        saludos_simples = ["hola", "buenos dias", "buenas tardes", "buenas noches", "hey", "holi", "saludos"]
+        despedidas_simples = ["adios", "chao", "hasta luego", "nos vemos", "bye", "adiós"]
+        agradecimientos_simples = ["gracias", "muchas gracias", "thanks", "thank you"]
+        
+        # Verificar si es SOLO un saludo (máximo 5 palabras y contiene saludo)
+        palabras = question_lower.split()
+        es_solo_saludo = len(palabras) <= 3 and any(saludo == question_lower or question_lower.startswith(saludo) for saludo in saludos_simples)
+        es_solo_despedida = len(palabras) <= 3 and any(despedida in question_lower for despedida in despedidas_simples)
+        es_solo_agradecimiento = len(palabras) <= 4 and any(agradecimiento == question_lower for agradecimiento in agradecimientos_simples)
+        
+        # Responder SOLO si es únicamente un saludo
+        if es_solo_saludo:
             return {
-                "answer": "¡Hola! 👋 Soy tu asistente especializado en Seguridad y Salud en el Trabajo. ¿En qué puedo ayudarte hoy? Puedes preguntarme sobre conceptos de SST, definiciones, procedimientos y más.",
+                "answer": "¡Hola! 👋 Soy tu asistente especializado en Seguridad y Salud en el Trabajo. ¿En qué puedo ayudarte hoy?",
                 "sources": [],
                 "context_used": 0
             }
         
-        # Responder a despedidas
-        if any(despedida in question_lower for despedida in despedidas):
+        # Responder SOLO si es únicamente una despedida
+        if es_solo_despedida:
             return {
-                "answer": "¡Hasta pronto! 👋 Fue un placer ayudarte. Recuerda que estoy aquí cuando necesites información sobre Seguridad y Salud en el Trabajo.",
+                "answer": "¡Hasta pronto! 👋 Que tengas un excelente día.",
                 "sources": [],
                 "context_used": 0
             }
         
-        # Responder a agradecimientos
-        if any(agradecimiento in question_lower for agradecimiento in agradecimientos):
+        # Responder SOLO si es únicamente un agradecimiento
+        if es_solo_agradecimiento:
             return {
-                "answer": "¡De nada! 😊 Estoy aquí para ayudarte. Si tienes más preguntas sobre SST, no dudes en consultarme.",
+                "answer": "¡De nada! 😊 Estoy aquí para ayudarte cuando lo necesites.",
                 "sources": [],
                 "context_used": 0
             }
+        
+        # Si contiene saludo + pregunta, agregar saludo al inicio de la respuesta
+        tiene_saludo = any(saludo in palabras[:3] for saludo in saludos_simples)
         
         # Verificar que hay documentos indexados
         doc_count = vector_db.get_indexed_count()
@@ -231,6 +240,10 @@ Tu tarea es responder preguntas usando la información del contexto proporcionad
 **TU RESPUESTA:"""
 
         answer = generate(prompt, max_tokens=1200)
+        
+        # Si la pregunta tenía saludo al inicio, agregar saludo a la respuesta
+        if tiene_saludo:
+            answer = "¡Hola! 👋\n\n" + answer
         
         # Preparar lista de fuentes con información de chunks
         sources_list = []

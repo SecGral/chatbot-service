@@ -1,12 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sst_agent.app.services.embeddings import embed_text, get_embedding_dimension
 from sst_agent.app.services import vector_db
-from sst_agent.app.services.loader import get_all_files, load_file
+from sst_agent.app.services.loader import get_all_files, load_file, DATA_FOLDER
 from sst_agent.app.services.chunking import split_by_sections
 from sst_agent.app.services.llm import generate
 import os
 import logging
+from datetime import datetime
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -281,4 +284,165 @@ def clear_index():
         }
     except Exception as e:
         logger.error(f"Error limpiando índice: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/documents")
+def list_documents():
+    """
+    Lista todos los documentos PDF en la carpeta data/docs.
+    Retorna información como nombre, fecha de modificación y si está indexado.
+    """
+    try:
+        docs_path = DATA_FOLDER
+        
+        if not os.path.exists(docs_path):
+            return JSONResponse(content={
+                "documents": [],
+                "message": f"Carpeta de documentos no existe: {docs_path}"
+            })
+        
+        documents = []
+        
+        # Listar solo archivos PDF
+        for filename in os.listdir(docs_path):
+            if filename.lower().endswith('.pdf'):
+                filepath = os.path.join(docs_path, filename)
+                file_stats = os.stat(filepath)
+                
+                # Verificar si está indexado
+                is_indexed = vector_db.document_exists(filename)
+                
+                documents.append({
+                    "nombre": filename,
+                    "fecha": datetime.fromtimestamp(file_stats.st_mtime).strftime("%d/%m/%Y"),
+                    "estado": "Procesado" if is_indexed else "Pendiente",
+                    "size": file_stats.st_size
+                })
+        
+        # Ordenar por fecha (más recientes primero)
+        documents.sort(key=lambda x: x["fecha"], reverse=True)
+        
+        return JSONResponse(content={
+            "documents": documents,
+            "total": len(documents)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error listando documentos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Sube un PDF a la carpeta data/docs y lo indexa automáticamente.
+    """
+    try:
+        # Validar que sea PDF
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
+        
+        # Ruta de destino
+        docs_path = DATA_FOLDER
+        
+        # Crear carpeta si no existe
+        os.makedirs(docs_path, exist_ok=True)
+        
+        file_path = os.path.join(docs_path, file.filename)
+        
+        # Verificar si el archivo ya existe
+        if os.path.exists(file_path):
+            raise HTTPException(status_code=400, detail="El archivo ya existe")
+        
+        # Guardar archivo
+        content = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        logger.info(f"Archivo guardado: {file.filename}")
+        
+        # Indexar automáticamente
+        try:
+            # Verificar si ya está indexado
+            if vector_db.document_exists(file.filename):
+                logger.info(f"Documento '{file.filename}' ya estaba indexado")
+            else:
+                # Cargar y procesar documento
+                logger.info(f"Indexando '{file.filename}'...")
+                doc_content = load_file(file_path)
+                
+                # Dividir en chunks
+                chunks = split_by_sections(doc_content, max_chunk_size=1200)
+                logger.info(f"  Dividido en {len(chunks)} chunks")
+                
+                # Procesar cada chunk
+                for chunk_idx, chunk in enumerate(chunks):
+                    embedding = embed_text([chunk])[0].tolist()
+                    
+                    if vector_db.add_document_chunk(file.filename, chunk, embedding, chunk_idx):
+                        logger.info(f"  ✓ Chunk {chunk_idx + 1}/{len(chunks)} indexado")
+                    else:
+                        logger.error(f"  ✗ Error en chunk {chunk_idx + 1}")
+                
+                logger.info(f"✓ '{file.filename}' indexado con {len(chunks)} chunks")
+        
+        except Exception as index_error:
+            logger.error(f"Error al indexar: {index_error}")
+            # El archivo se guardó pero no se indexó
+            return JSONResponse(content={
+                "status": "partial_success",
+                "message": f"Archivo guardado pero error al indexar: {str(index_error)}",
+                "filename": file.filename
+            })
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Archivo subido e indexado correctamente",
+            "filename": file.filename
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error subiendo archivo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/documents/{filename}")
+def delete_document(filename: str):
+    """
+    Elimina un documento PDF de data/docs y sus embeddings de la base de datos.
+    """
+    try:
+        # Validar nombre de archivo
+        if not filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Solo se pueden eliminar archivos PDF")
+        
+        docs_path = DATA_FOLDER
+        file_path = os.path.join(docs_path, filename)
+        
+        # Verificar si existe
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Archivo no encontrado")
+        
+        # Eliminar de base de datos
+        deleted_from_db = vector_db.delete_document(filename)
+        
+        # Eliminar archivo físico
+        os.remove(file_path)
+        
+        logger.info(f"Archivo eliminado: {filename}")
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Documento eliminado correctamente",
+            "deleted_from_db": deleted_from_db,
+            "filename": filename
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error eliminando documento: {e}")
         raise HTTPException(status_code=500, detail=str(e))

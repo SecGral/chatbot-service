@@ -9,7 +9,7 @@ VERSION = "0.1"
 DEBUG = True
 
 # Groq API
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "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")
 
 # PostgreSQL Database
 DATABASE_URL = os.getenv(

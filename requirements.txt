@@ -6,6 +6,7 @@ groq
 sentence-transformers
 pypdf
 python-docx
+python-multipart
 psycopg2-binary
 sqlalchemy
 pgvector

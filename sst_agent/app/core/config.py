@@ -14,7 +14,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "gsk_QxtZZPIbUqy68XgCEELfWGdyb3FYUMl7r3
 # PostgreSQL Database
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/sst_agent"
+    "postgresql://postgres:1234@localhost:5432/sst_agent"
 )
 
 # Embeddings

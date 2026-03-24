@@ -9,6 +9,28 @@ router = APIRouter(prefix="/api", tags=["documents"])
 
 logger = logging.getLogger(__name__)
 
+@router.get("/paginated/documents")
+def get_paginated_documents(page: int = 1, page_size: int = 10):
+    """
+    Devuelve una página de documentos con paginación.
+    
+    Args:
+        page: Número de página (default=1)
+        page_size: Cantidad de documentos por página (default=10)
+        
+    Returns:
+        Dict con documentos paginados y metadata
+    """
+    try:
+        result = DocumentService.paginated_documents(page, page_size)
+        return JSONResponse(content=result)
+        
+    except ValueError as ve:
+        logger.warning(f"Solicitud de página inválida: {ve}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Error en paginación de documentos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/documents")
 def list_documents():

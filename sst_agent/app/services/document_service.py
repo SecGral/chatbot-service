@@ -1,7 +1,3 @@
-"""
-Servicio de gestión de documentos.
-Operaciones CRUD de documentos en el sistema.
-"""
 import os
 import logging
 from datetime import datetime
@@ -13,18 +9,51 @@ from sst_agent.app.services.indexing_service import IndexingService
 
 logger = logging.getLogger(__name__)
 
-
 class DocumentService:
-    """Servicio de gestión de documentos."""
-    
+
+    @staticmethod
+    def paginated_documents(page: int = 0, page_size: int = 10) -> Dict[str, Any]:
+        try:
+            all_docs = DocumentService.list_documents()["documents"]
+            total_docs = len(all_docs)
+
+            if total_docs == 0:
+                return {
+                    "data": [],
+                    "pagination": {
+                        "total": 0,
+                        "page": 0,
+                        "pageSize": page_size,
+                        "totalPages": 0
+                    }
+                }
+
+            total_pages = (total_docs + page_size - 1) // page_size
+
+            if page < 0 or page >= total_pages:
+                raise ValueError(f"Página inválida. Debe estar entre 0 y {total_pages - 1}")
+
+            start_index = page * page_size
+            end_index = start_index + page_size
+            paginated_docs = all_docs[start_index:end_index]
+
+            return {
+                "data": paginated_docs,
+                "pagination": {
+                    "total": total_docs,
+                    "page": page,
+                    "pageSize": page_size,
+                    "totalPages": total_pages
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error en paginación de documentos: {e}")
+            raise
+
     @staticmethod
     def list_documents() -> Dict[str, Any]:
-        """
-        Lista todos los documentos en la carpeta de datos.
-        
-        Returns:
-            Dict: Lista de documentos con información
-        """
+        """ Lista todos los documentos en la carpeta de datos. """
         try:
             docs_path = DATA_FOLDER
             

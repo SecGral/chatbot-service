@@ -77,6 +77,16 @@ def add_document(filename: str, content: str, embedding: List[float], chunk_inde
     """
     db = SessionLocal()
     try:
+        # Validar que el documento con este filename no tenga este mismo chunk
+        existing = db.query(Document).filter(
+            Document.filename == filename,
+            Document.chunk_index == chunk_index
+        ).first()
+        
+        if existing:
+            logger.warning(f"Chunk {chunk_index} de '{filename}' ya existe, omitiendo duplicado")
+            return existing
+        
         # Crear preview del contenido (primeros 200 caracteres)
         content_preview = content[:200] if len(content) > 200 else content
         

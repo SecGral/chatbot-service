@@ -9,7 +9,7 @@ logging.basicConfig(
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sst_agent.app.core.config import PROJECT_NAME, VERSION
+from sst_agent.app.core.config import ALLOWED_ORIGINS, PROJECT_NAME, VERSION
 from sst_agent.app.services.db import init_db
 from sst_agent.app.api.router import router
 from sst_agent.app.services.session_manager import SessionManager
@@ -28,7 +28,7 @@ except Exception as e:
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3002"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

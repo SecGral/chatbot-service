@@ -1,36 +1,76 @@
-# Entorno virtual
+# ==========================================
+# Entornos Virtuales y Dependencias
+# ==========================================
 venv/
 .venv/
+env/
+.env/
+ENV/
+pyvenv.cfg
+.Python
+include/
+lib/
+share/
+pip-selfcheck.json
 
-# Caches
-__pycache__/
-*.pyc
-
-# Variables de entorno
-.env
-*.env
-
-# Archivos de logs
-*.log
-
-# Archivos temporales o de BD
-*.db
-*.sqlite3
-
-
-# Python
+# ==========================================
+# Caché y Compilación de Python
+# ==========================================
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
 *.pyd
-.Python
-*.egg-info/
-.eggs/
-dist/
+*.so
+.libs/
 build/
-.venv/
-venv/
-*.env
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# Variables de Entorno y Configuración (Seguridad)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+
+# ==========================================
+# Herramientas de Pruebas, Linters y Tipado
+# ==========================================
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.htmlcov/
+
+# ==========================================
+# IDEs, Editores y Sistema Operativo
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

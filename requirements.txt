@@ -3,7 +3,7 @@ uvicorn
 pydantic
 python-dotenv
 groq
-sentence-transformers
+fastembed
 pypdf
 python-docx
 python-multipart
